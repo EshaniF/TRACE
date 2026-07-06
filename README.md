@@ -2,9 +2,9 @@ Python code for the paper 'LLM-Guided Relational Transition Graphs for Temporal 
 
 Note: Experiments were conducted on ICEWS14, ICEWS18, and GDELT. All datasets are public benchmarks.
 
-
-Train models
-Then the following commands can be used to train the proposed models. The evaluation results and visualizations will be generated when training completes.
+Datasets
+ICEWS14, ICEWS18, and GDELT are publicly available TKG benchmarks.
+Download and place under `data/` following the structure above.
 
 cd src
 
