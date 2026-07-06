@@ -20,16 +20,20 @@ The LLM prompt used for transition graph construction is provided in `transition
 Step 2: Train
 
 ***Full model***
+
 python maintr.py -d ICEWS14 --train-history-len 7 --test-history-len 7 --run-statistic --n-epochs 80 --evaluate-every 1 
 
 ***Draw heatmap with the following***
+
  python relation_similarity_heatmap.py  --ckpt-no-reg ../models/logcl_ICEWS14  --ckpt-with-reg ../models/ctstkg_ICEWS14_0.3 --num-rels 230  --relation2id ../data/ICEWS14/relation2id.txt  --transition-graph ../data/ICEWS14/rel_transition_graph.pkl --anchor-relation "Engage_in_negotiation" --top-k 3 --out relation_similarity.png
 
  ***Ablation***
  # Mechanism A only (embedding regularisation, no re-ranking)
+
 python mainneg.py -d ICEWS14 --use-transition --rerank-alpha 0.0
 
 # Mechanism B only (re-ranking, no regularisation)
+
 python mainneg.py -d ICEWS14 --use-transition --lambda-trans 0.0
 
 *******************************************************************************************************************************
