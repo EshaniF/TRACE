@@ -1,0 +1,65 @@
+TRANSITION GRAPH RELIABILITY ANALYSIS
+============================================================
+
+Dataset: ICEWS14
+----------------------------------------
+  mean_name_length    : 4.135
+  unique_token_ratio  : 0.9987
+  long_name_pct       : 58.26%
+  vocab_richness      : 0.2776
+  specificity_raw     : 5.2755
+  num_rels              : 230
+  total_succ            : 1106
+  total_inh             : 1108
+  succ_per_rel          : 4.808695652173913
+  inh_per_rel           : 4.817391304347826
+  succ_cov_pct          : 96.52173913043478
+  inh_cov_pct           : 96.52173913043478
+  both_cov_pct          : 96.52173913043478
+  inh_succ_ratio        : 1.0018083182640145
+  high_conf_succ        : 0.6238698010849909
+  high_conf_inh         : 0.9566787003610109
+  succ_mean_w           : 0.5699139240506329
+  succ_std_w            : 0.14300844518357736
+  succ_var_w            : 0.02045141539382425
+  inh_mean_w            : 0.7745870036101082
+  inh_std_w             : 0.15124249312412405
+  inh_var_w             : 0.022874291726400712
+  all_mean_w            : 0.672342908762421
+  all_std_w             : 0.17926713790195115
+  all_var_w             : 0.03213670673155717
+  succ_zero_emp_pct   : 57.41%
+  inh_zero_emp_pct    : 65.61%
+  inhibitor_gap       : 8.20%
+
+Dataset: ICEWS18
+----------------------------------------
+  mean_name_length    : 4.293
+  unique_token_ratio  : 0.9988
+  long_name_pct       : 60.94%
+  vocab_richness      : 0.2448
+  specificity_raw     : 5.3373
+  num_rels              : 256
+  total_succ            : 455
+  total_inh             : 457
+  succ_per_rel          : 1.77734375
+  inh_per_rel           : 1.78515625
+  succ_cov_pct          : 35.9375
+  inh_cov_pct           : 35.9375
+  both_cov_pct          : 35.9375
+  inh_succ_ratio        : 1.0043956043956044
+  high_conf_succ        : 0.5626373626373626
+  high_conf_inh         : 0.8774617067833698
+  succ_mean_w           : 0.5445246153846154
+  succ_std_w            : 0.14730359293983272
+  succ_var_w            : 0.021698348492983938
+  inh_mean_w            : 0.7194420131291029
+  inh_std_w             : 0.15100149298135893
+  inh_var_w             : 0.02280145088259939
+  all_mean_w            : 0.6321751096491227
+  all_std_w             : 0.1729164435582656
+  all_var_w             : 0.029900096452838858
+  succ_zero_emp_pct   : 48.79%
+  inh_zero_emp_pct    : 61.93%
+  inhibitor_gap       : 13.13%
+

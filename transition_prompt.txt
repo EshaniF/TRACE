@@ -1,0 +1,28 @@
+Domain: {domain}
+Anchor relation: "{relation_name}"
+
+Observed examples of "{relation_name}" in the data:
+  e.g. {subject_1} -> [{relation_name}] -> {object_1}
+  e.g. {subject_2} -> [{relation_name}] -> {object_2}
+  e.g. {subject_3} -> [{relation_name}] -> {object_3}
+
+From the relation list below, select exactly {top_k} SUCCESSORS
+and exactly {top_k} INHIBITORS for the anchor relation.
+
+SUCCESSOR: a relation likely to occur SHORTLY AFTER the anchor.
+  Score 1–10: 10 = almost certain to follow, 1 = unlikely to follow.
+
+INHIBITOR: a relation whose occurrence is SUPPRESSED by the anchor.
+  Score 1–10: 10 = strongly suppressed, 1 = weakly suppressed.
+
+Rules:
+  - Use ONLY names from the list below, copied EXACTLY.
+  - Each relation is ONE object: {"relation":"name","score":N}
+  - Never combine two relation names in a single object.
+
+Relation list:
+{relation_list}
+
+Return ONLY this JSON, no explanation:
+{"successors":[{"relation":"exact name","score":8},...],
+ "inhibitors":[{"relation":"exact name","score":9},...]}
