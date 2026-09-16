@@ -35,6 +35,8 @@ python maintr.py -d ICEWS14 --use-transition --rerank-alpha 0.0
 ***Mechanism B only (re-ranking, no regularisation)***
 
 python maintr.py -d ICEWS14 --use-transition --lambda-trans 0.0
+**
+**Appendix.pdf provides details of the benchmarks used, implementation details, and additional experimental results that were omitted from the main text.
 
 *******************************************************************************************************************************
 Code partially adapted from authors' implementation of LogCL, RE-GCN, TIRGN models.
