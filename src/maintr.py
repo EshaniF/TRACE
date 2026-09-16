@@ -1,5 +1,5 @@
 """
-mainneg.py — Training script for LogCL + Temporal Transition Extensions
+maintr.py — Training script for LogCL + Temporal Transition Extensions
 =========================================================================
 Base model : LogCL
 Extension  : LLM-Augmented Temporal Transition Rules
@@ -12,27 +12,46 @@ Two mechanisms replace the original four additions:
 
   B. Inference-time re-ranking  [evaluation]
      Post-hoc log-score correction using recent event history and the
-     transition graph.  Controlled by --rerank-alpha.
+     transition graph.  Controlled by --rerank-alpha and --rerank-mode.
 
 Usage
 -----
   # Step 1: build the transition graph (once per dataset)
   python llm_transition_scorer.py -d ICEWS14
 
+  # Step 1b (optional): build baseline graphs for comparison
+  python build_baseline_graphs.py -d ICEWS14 --mode all --seed 0
+
   # Step 2: train
-  python mainneg.py -d ICEWS14 --use-transition
+  python maintr.py -d ICEWS14 --use-transition
 
   # Base LogCL (no transition graph):
-  python mainneg.py -d ICEWS14
+  python maintr.py -d ICEWS14 --rerank-mode none
 
   # Evaluate only:
-  python mainneg.py -d ICEWS14 --use-transition --test
+  python maintr.py -d ICEWS14 --use-transition --test
 
   # Ablate re-ranking only (training regularisation only):
-  python mainneg.py -d ICEWS14 --use-transition --rerank-alpha 0.0
+  python maintr.py -d ICEWS14 --use-transition --rerank-alpha 0.0
 
   # Ablate regularisation only (re-ranking only):
-  python mainneg.py -d ICEWS14 --use-transition --lambda-trans 0.0
+  python maintr.py -d ICEWS14 --use-transition --lambda-trans 0.0
+
+  # Train and Evaluate against the empirical baseline graph, saving ranks:
+  python maintr.py -d ICEWS14 --use-transition \\
+      --transition-graph-path ../data/ICEWS14/rel_transition_graph_empirical.pkl \\
+      --save-ranks --save-ranks-tag icews14_empirical
+
+  # Evaluate against random / shuffled baseline graphs:
+  python maintr.py -d ICEWS14 --use-transition \\
+      --transition-graph-path ../data/ICEWS14/rel_transition_graph_random_seed0.pkl \\
+      --save-ranks --save-ranks-tag icews14_random_seed0
+
+  python maintr.py -d ICEWS14 --use-transition \\
+      --transition-graph-path ../data/ICEWS14/rel_transition_graph_shuffled_seed0.pkl \\
+      --save-ranks --save-ranks-tag icews14_shuffled_seed0
+
+
 """
 
 import csv
@@ -56,6 +75,7 @@ from rgcn import utils
 from rgcn.utils import build_sub_graph, build_graph
 from src.rrgcntr import RecurrentRGCN
 from rgcn.knowledge_graph import _read_triplets_as_list
+
 
 
 def e2r(triplets, num_rels, use_cuda=True):
@@ -226,6 +246,19 @@ def test(model, history_list, test_list, num_rels, num_nodes, use_cuda,
     print("(all_filter) MRR, H@1,3,10: {:.4f} {:.4f} {:.4f} {:.4f}".format(
         all_mrr_filter.item(), *all_hit_filter[:3]))
 
+
+    if getattr(args, "save_ranks", False):
+        all_filtered_ranks = torch.cat(
+            [torch.cat(ranks_filter), torch.cat(ranks_filter_inv)]
+        ).cpu().numpy()
+        os.makedirs('../result/ranks', exist_ok=True)
+        tag = args.save_ranks_tag or f"{args.dataset}_{args.rerank_mode}"
+        out_path = f'../result/ranks/{tag}_ranks.npy'
+        np.save(out_path, all_filtered_ranks)
+        print(f"[SaveRanks] Saved {len(all_filtered_ranks)} per-query "
+              f"filtered ranks to {out_path}")
+    # ------------------------------------------------------------------------
+
     if mode == "test":
         fname        = f'../result/{args.dataset}.csv'
         write_header = not os.path.isfile(fname)
@@ -233,7 +266,8 @@ def test(model, history_list, test_list, num_rels, num_nodes, use_cuda,
         with open(fname, 'a', newline='') as f:
             cols = ['encoder', 'opn', 'pre_type', 'use_static',
                     'use_cl', 'use_transition',
-                    'lambda_trans', 'rerank_alpha',
+                    'lambda_trans', 'rerank_alpha', 'rerank_mode',
+                    'transition_graph_path',
                     'transition_top_k', 'gpu', 'datetime',
                     'pre_weight', 'train_len', 'test_len',
                     'temperature', 'lr', 'n_hidden',
@@ -257,6 +291,8 @@ def test(model, history_list, test_list, num_rels, num_nodes, use_cuda,
                 'use_transition': args.use_transition,
                 'lambda_trans':   args.lambda_trans,
                 'rerank_alpha':   args.rerank_alpha,
+                'rerank_mode':    args.rerank_mode,
+                'transition_graph_path': args.transition_graph_path or 'default',
                 'transition_top_k': args.transition_top_k,
                 'gpu':            args.gpu,
                 'datetime':       datetime.now(),
@@ -372,6 +408,8 @@ def run_experiment(args, n_hidden=None, n_layers=None,
         rerank_alpha     = args.rerank_alpha,
         dataset          = args.dataset,
         data_root        = args.data_root,
+        transition_graph_path = args.transition_graph_path,
+        rerank_mode           = args.rerank_mode,
     )
 
     if use_cuda:
@@ -394,7 +432,10 @@ def run_experiment(args, n_hidden=None, n_layers=None,
           f"{'ON' if args.use_transition else 'OFF (base LogCL)'}")
     if args.use_transition:
         print(f"  Relation reg   : lambda_trans = {args.lambda_trans}")
-        print(f"  Re-ranking     : rerank_alpha = {args.rerank_alpha}")
+    print(f"  Re-rank mode   : {args.rerank_mode} "
+          f"(alpha = {args.rerank_alpha})")
+    if args.transition_graph_path:
+        print(f"  Graph path override : {args.transition_graph_path}")
 
     # --- Test mode ---
     if args.test and os.path.exists(model_state_file):
@@ -529,6 +570,8 @@ def run_experiment(args, n_hidden=None, n_layers=None,
                 model_state_file, static_graph,
                 mode="test", args=args)
 
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='LogCL + Temporal Transition Extensions')
@@ -578,12 +621,39 @@ if __name__ == '__main__':
     parser.add_argument("--use-transition",    action='store_true', default=True,
                         help="Enable temporal transition extensions.")
     parser.add_argument("--transition-top-k",  type=int,   default=10)
-    parser.add_argument("--lambda-trans",      type=float, default=0,
+    parser.add_argument("--lambda-trans",      type=float, default=0.4,
                         help="Weight for relation embedding regularisation "
                              "loss (A). Set 0.0 to ablate.")
-    parser.add_argument("--rerank-alpha",      type=float, default=0.1,
+    parser.add_argument("--rerank-alpha",      type=float, default=0.3,
                         help="Strength of inference-time re-ranking "
                              "correction (B). Set 0.0 to ablate.")
+
+    # NEW — baseline graph / re-ranking-mode selection
+    parser.add_argument("--transition-graph-path", type=str, default=None,
+                        help="Override path to the transition graph "
+                             "pickle. Defaults to <data-root>/<dataset>/"
+                             "rel_transition_graph.pkl. Use this to "
+                             "point at the empirical / random / "
+                             "shuffled baselines produced by "
+                             "build_baseline_graphs.py.")
+    parser.add_argument("--rerank-mode", type=str, default="transition",
+                        choices=["transition", "frequency", "recency", "none"],
+                        help="Which re-ranking mechanism to apply at "
+                             "inference time. 'transition' uses the "
+                             "loaded TransitionGraph (default). "
+                             "'frequency'/'recency' use "
+                             "frequency_rerank.py's graph-free "
+                             "baselines. 'none' disables re-ranking "
+                             "entirely regardless of --rerank-alpha.")
+
+    # NEW — per-query rank saving for significance testing
+    parser.add_argument("--save-ranks",     action='store_true', default=False,
+                        help="Save per-query filtered ranks to "
+                             "../result/ranks/<tag>_ranks.npy for later "
+                             "significance testing (significance_test.py).")
+    parser.add_argument("--save-ranks-tag", type=str,   default=None,
+                        help="Filename tag for --save-ranks output. "
+                             "Defaults to '<dataset>_<rerank_mode>'.")
 
     # dropout
     parser.add_argument("--dropout",           type=float, default=0.2)
@@ -614,3 +684,5 @@ if __name__ == '__main__':
     args.test_history_len = args.train_history_len
     print(args)
     run_experiment(args)
+
+
